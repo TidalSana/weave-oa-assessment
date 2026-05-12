@@ -13,6 +13,8 @@ export default function Home() {
     withBots?: DashboardData;
     withoutBots?: DashboardData;
   }>({});
+  const [llmSummaries, setLlmSummaries] = useState<Record<string, string>>({});
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   useEffect(() => {
     const cacheKey = includeBots ? 'withBots' : 'withoutBots';
@@ -46,6 +48,31 @@ export default function Home() {
         setLoading(false);
       });
   }, [includeBots]);
+
+  useEffect(() => {
+    if (!data?.engineers?.length) return;
+
+    setLlmSummaries({});
+    setSummaryLoading(true);
+
+    fetch('/api/summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ engineers: data.engineers }),
+    })
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.summaries) {
+          setLlmSummaries(result.summaries);
+          console.log(result.cached ? '✅ Summaries from cache' : '🤖 Fresh LLM summaries');
+        }
+        setSummaryLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load summary:', err);
+        setSummaryLoading(false);
+      });
+  }, [data]);
 
   if (loading) {
     return (
@@ -116,6 +143,18 @@ export default function Home() {
               </span>
             </span>
           </label>
+
+          {!includeBots && (
+            <div className="mt-3 pt-3 border-t border-white/10">
+              <p className="text-xs text-yellow-300 flex items-center gap-2">
+                <span className="text-base shrink-0">ℹ️</span>
+                <span>
+                  <strong>Note:</strong> Impact scores exclude bot PRs and reviews. Some engineers may have
+                  lower scores due to filtered bot interactions.
+                </span>
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Impact Score Chart */}
@@ -144,7 +183,13 @@ export default function Home() {
         {/* Engineer Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {data.engineers.map((engineer, index) => (
-            <EngineerCard key={engineer.username} engineer={engineer} rank={index + 1} />
+            <EngineerCard
+              key={engineer.username}
+              engineer={engineer}
+              rank={index + 1}
+              aiSummary={llmSummaries[engineer.username]}
+              summaryLoading={summaryLoading && !llmSummaries[engineer.username]}
+            />
           ))}
         </div>
 
@@ -167,7 +212,17 @@ export default function Home() {
   );
 }
 
-function EngineerCard({ engineer, rank }: { engineer: EngineerImpact; rank: number }) {
+function EngineerCard({
+  engineer,
+  rank,
+  aiSummary,
+  summaryLoading,
+}: {
+  engineer: EngineerImpact;
+  rank: number;
+  aiSummary?: string;
+  summaryLoading?: boolean;
+}) {
   const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
 
   return (
@@ -207,6 +262,24 @@ function EngineerCard({ engineer, rank }: { engineer: EngineerImpact; rank: numb
           ))}
         </ul>
       </div>
+
+      {(aiSummary || summaryLoading) && (
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <div className="flex items-start gap-2 mb-2">
+            <span className="text-lg">🤖</span>
+            <h5 className="text-xs font-semibold text-gray-400 uppercase">AI Insight</h5>
+          </div>
+
+          {summaryLoading ? (
+            <div className="flex items-center gap-2 text-gray-400">
+              <div className="animate-spin rounded-full h-3 w-3 border-t border-b border-purple-400"></div>
+              <span className="text-xs">Analyzing...</span>
+            </div>
+          ) : aiSummary ? (
+            <p className="text-gray-300 text-sm leading-relaxed italic">{`"${aiSummary}"`}</p>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

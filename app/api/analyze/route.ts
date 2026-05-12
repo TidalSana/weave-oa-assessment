@@ -18,6 +18,18 @@ function formatElapsedMs(sinceMark: number): string {
   return `${Math.round(elapsed)}ms (${(elapsed / 1000).toFixed(2)}s)`;
 }
 
+/** Treat missing username as bot; match GitHub bot naming and account type */
+function isBot(username: string, userType?: string): boolean {
+  if (!username) return true;
+
+  const lowerName = username.toLowerCase();
+  return (
+    lowerName.includes('bot') ||
+    lowerName.includes('[bot]') ||
+    userType === 'Bot'
+  );
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const includeBots = searchParams.get('includeBots') === 'true';
@@ -46,21 +58,36 @@ export async function GET(request: Request) {
 
     console.log(`Found ${mergedPRs.length} merged PRs in last ${DAYS_TO_ANALYZE} days`);
 
+    console.log('\n🔍 Sample of PR authors BEFORE filtering:');
+    mergedPRs.slice(0, 10).forEach((pr) => {
+      const username = pr.user?.login || 'unknown';
+      const type = pr.user?.type || 'unknown';
+      const botFlag = isBot(pr.user?.login || '', pr.user?.type) ? ' 🤖' : '';
+      console.log(`  - ${username}${botFlag} (type: ${type})`);
+    });
+
     const filteredPRs = includeBots
       ? mergedPRs
-      : mergedPRs.filter(
-          (pr) =>
-            pr.user?.login &&
-            !pr.user.login.toLowerCase().includes('bot') &&
-            !pr.user.login.includes('[bot]') &&
-            pr.user.type !== 'Bot'
-        );
+      : mergedPRs.filter((pr) => !isBot(pr.user?.login || '', pr.user?.type));
 
-    console.log(
-      includeBots
-        ? `Including all PRs (bots enabled)`
-        : `Filtered to ${filteredPRs.length} PRs (${mergedPRs.length - filteredPRs.length} bots excluded)`
-    );
+    // Detailed bot filtering log
+    if (!includeBots) {
+      const botsFiltered = mergedPRs.filter((pr) =>
+        isBot(pr.user?.login || '', pr.user?.type)
+      );
+
+      const uniqueBots = [...new Set(botsFiltered.map((pr) => pr.user?.login))];
+      console.log(`\n🤖 Bot Filtering Results:`);
+      console.log(`  Total PRs before filter: ${mergedPRs.length}`);
+      console.log(`  Bot PRs detected: ${botsFiltered.length}`);
+      console.log(`  Unique bot accounts: ${uniqueBots.length}`);
+      console.log(`  PRs after filter: ${filteredPRs.length}`);
+      console.log(
+        `  Sample bots filtered: ${uniqueBots.slice(0, 5).join(', ')}${uniqueBots.length > 5 ? '...' : ''}`
+      );
+    } else {
+      console.log(`\n✅ Including all PRs (bots enabled) - ${mergedPRs.length} total`);
+    }
 
     console.log(`⏱️ PR list fetch: ${formatElapsedMs(analyzeT0)}`);
 
@@ -131,6 +158,10 @@ export async function GET(request: Request) {
               const reviewer = review.user?.login;
               if (!reviewer || reviewer === author) return;
 
+              if (!includeBots && isBot(reviewer, review.user?.type)) {
+                return;
+              }
+
               if (!engineerMap.has(reviewer)) {
                 engineerMap.set(reviewer, {
                   username: reviewer,
@@ -185,6 +216,10 @@ export async function GET(request: Request) {
       if (reviewDepth > 0.5) reasoning.push(`Thoughtful reviews with detailed feedback`);
       if (avgFilesPerPR > 10) reasoning.push(`Substantial changes averaging ${Math.round(avgFilesPerPR)} files per PR`);
 
+      if (!includeBots && eng.reviewsGiven > 0 && eng.reviewsGiven < 5 && eng.prsMerged > 2) {
+        reasoning.push(`Review count excludes bot-authored PRs`);
+      }
+
       return {
         username: eng.username,
         avatar_url: eng.avatar_url,
@@ -203,10 +238,64 @@ export async function GET(request: Request) {
       };
     });
 
+    if (!includeBots) {
+      const botsInFinalList = engineers.filter((eng) => isBot(eng.username));
+      if (botsInFinalList.length > 0) {
+        console.error('\n🚨 CRITICAL: Bots found in final engineer list despite filter!');
+        botsInFinalList.forEach((bot) => {
+          console.error(`  - ${bot.username} (${bot.impactScore} pts)`);
+        });
+      } else {
+        console.log('\n✅ Bot filter verification passed - no bots in final list');
+      }
+    }
+
     // Sort by impact score and take top 5
     const topEngineers = engineers
       .sort((a, b) => b.impactScore - a.impactScore)
       .slice(0, 5);
+
+    // Debug: Check for specific engineer
+    const pauldambraData = engineers.find((e) => e.username === 'pauldambra');
+    if (pauldambraData) {
+      console.log(`\n🔍 DEBUG: pauldambra found in engineer list - ${pauldambraData.impactScore} pts (${pauldambraData.metrics.prsMerged} PRs, ${pauldambraData.metrics.reviewsGiven} reviews)`);
+    } else {
+      console.log(`\n⚠️  DEBUG: pauldambra NOT found in engineer list (includeBots=${includeBots})`);
+    }
+
+    console.log(`\n👥 All ${engineers.length} Engineers Tracked:`);
+
+    const engineersWithBotFlag = engineers.map((eng) => ({
+      ...eng,
+      hasBotInName: isBot(eng.username),
+    }));
+
+    const potentialBots = engineersWithBotFlag.filter((e) => e.hasBotInName);
+    const realEngineers = engineersWithBotFlag.filter((e) => !e.hasBotInName);
+
+    console.log(`  ✅ Real engineers: ${realEngineers.length}`);
+    console.log(`  🤖 Potential bots: ${potentialBots.length}`);
+
+    if (potentialBots.length > 0) {
+      console.log(`\n⚠️  WARNING: Bots detected in engineer list!`);
+      potentialBots.forEach((bot) => {
+        console.log(`    - ${bot.username} (${bot.impactScore} pts, ${bot.metrics.prsMerged} PRs)`);
+      });
+    }
+
+    console.log(`\n📊 Top 10 Engineers (by impact score):`);
+    engineers
+      .sort((a, b) => b.impactScore - a.impactScore)
+      .slice(0, 10)
+      .forEach((eng, idx) => {
+        const botFlag = isBot(eng.username) ? ' 🤖 [BOT!]' : '';
+        console.log(
+          `  ${idx + 1}. ${eng.username}${botFlag} - ${eng.impactScore} pts ` +
+            `(${eng.metrics.prsMerged} PRs, ${eng.metrics.reviewsGiven} reviews)`
+        );
+      });
+
+    console.log(`\n🎯 Returning top 5 to client\n`);
 
     const response: DashboardData = {
       engineers: topEngineers,
