@@ -38,9 +38,9 @@ Write your metrics here as you define them...
 ## Submission Checklist
 - [x] Timer started BEFORE coding begins
 - [x] Dashboard deployed and URL works (<10s load time)
-- [ ] Shows top 5 engineers with clear reasoning
-- [ ] Includes all data from last 90 days
-- [ ] Approach description written above
+- [x] Shows top 5 engineers with clear reasoning
+- [x] Includes all data from last 90 days
+- [x] Approach description written above
 - [ ] Coding agent session exported
 - [ ] Form submitted: https://www.notion.so/32dc2d11474d807886f6e49bf481f4fb?pvs=21
 
