@@ -4,6 +4,90 @@ import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { DashboardData, EngineerImpact } from '@/types';
 
+const shimmerStyles = `
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    background-size: 1000px 100%;
+  }
+`;
+
+function SkeletonBox({ className = '' }: { className?: string }) {
+  return <div className={`bg-white/10 rounded animate-shimmer ${className}`} />;
+}
+
+function SkeletonCard() {
+  return (
+    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
+      <div className="flex items-start gap-4 mb-4">
+        <SkeletonBox className="h-16 w-16 shrink-0 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <SkeletonBox className="h-6 w-32" />
+          <SkeletonBox className="h-8 w-24" />
+        </div>
+      </div>
+
+      <div className="mb-4 grid grid-cols-2 gap-3">
+        <SkeletonBox className="h-20" />
+        <SkeletonBox className="h-20" />
+        <SkeletonBox className="h-20" />
+        <SkeletonBox className="h-20" />
+      </div>
+
+      <SkeletonBox className="mb-4 h-32" />
+
+      <div className="space-y-2">
+        <SkeletonBox className="h-4 w-full" />
+        <SkeletonBox className="h-4 w-[85%]" />
+        <SkeletonBox className="h-4 w-[70%]" />
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
+      <style dangerouslySetInnerHTML={{ __html: shimmerStyles }} />
+
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 text-center">
+          <SkeletonBox className="mx-auto mb-2 h-12 w-full max-w-md sm:max-w-lg md:max-w-2xl" />
+          <SkeletonBox className="mx-auto mb-4 h-6 w-64 max-w-[80%]" />
+          <div className="flex flex-wrap justify-center gap-6">
+            <SkeletonBox className="h-4 w-32" />
+            <SkeletonBox className="h-4 w-32" />
+            <SkeletonBox className="h-4 w-40" />
+          </div>
+        </div>
+
+        <SkeletonBox className="mb-6 h-16 w-full rounded-lg" />
+
+        <div className="mb-8 rounded-lg border border-white/20 bg-white/10 p-6 backdrop-blur-sm">
+          <SkeletonBox className="mb-4 h-6 w-48" />
+          <SkeletonBox className="h-64 w-full" />
+        </div>
+
+        <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+
+        <SkeletonBox className="mb-8 h-32 w-full rounded-lg" />
+
+        <SkeletonBox className="h-48 w-full rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,15 +159,7 @@ export default function Home() {
   }, [data]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-white text-xl">Analyzing PostHog repository...</p>
-          <p className="text-gray-400 text-sm mt-2">Fetching 90 days of data</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error || !data) {
