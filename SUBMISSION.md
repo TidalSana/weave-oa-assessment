@@ -36,8 +36,8 @@ Write your metrics here as you define them...
 - Save as: `claude-session-export.txt` or `claude-session-export.md`
 
 ## Submission Checklist
-- [ ] Timer started BEFORE coding begins
-- [ ] Dashboard deployed and URL works (<10s load time)
+- [x] Timer started BEFORE coding begins
+- [x] Dashboard deployed and URL works (<10s load time)
 - [ ] Shows top 5 engineers with clear reasoning
 - [ ] Includes all data from last 90 days
 - [ ] Approach description written above

@@ -11,10 +11,17 @@ const octokit = new Octokit({
 const REPO_OWNER = 'PostHog';
 const REPO_NAME = 'posthog';
 const DAYS_TO_ANALYZE = 90;
+const BATCH_SIZE = 10; // Process 10 PRs at a time to respect rate limits
+
+function formatElapsedMs(sinceMark: number): string {
+  const elapsed = performance.now() - sinceMark;
+  return `${Math.round(elapsed)}ms (${(elapsed / 1000).toFixed(2)}s)`;
+}
 
 export async function GET() {
   try {
-    // grab the date 90 days ago
+    const analyzeT0 = performance.now();
+
     const since = subDays(new Date(), DAYS_TO_ANALYZE).toISOString();
 
     console.log(`Fetching data since ${since}...`);
@@ -35,70 +42,31 @@ export async function GET() {
     );
 
     console.log(`Found ${mergedPRs.length} merged PRs in last ${DAYS_TO_ANALYZE} days`);
+    console.log(`⏱️ PR list fetch: ${formatElapsedMs(analyzeT0)}`);
 
     // Aggregate engineer data
     const engineerMap = new Map<string, any>();
 
-    // Process PRs
-    for (const pr of mergedPRs) {
-      // get the author of the PR
-      const author = pr.user?.login;
-      // if the author is not found, continue
-      if (!author) continue;
+    const batchesT0 = performance.now();
 
-      // if the author is not in the engineerMap, add them
-      if (!engineerMap.has(author)) {
-        engineerMap.set(author, {
-          username: author,
-          avatar_url: pr.user?.avatar_url || '',
-          prsAuthored: 0,
-          prsMerged: 0,
-          reviewsGiven: 0,
-          reviewComments: 0,
-          directories: new Set<string>(),
-          filesChanged: 0,
-        });
-      }
+    // Process PRs in batches for better performance
+    const batches = [];
+    for (let i = 0; i < mergedPRs.length; i += BATCH_SIZE) {
+      batches.push(mergedPRs.slice(i, i + BATCH_SIZE));
+    }
 
-      // get the engineer from the engineerMap
-      const engineer = engineerMap.get(author);
-      engineer.prsAuthored++;
-      engineer.prsMerged++;
+    console.log(`Processing ${mergedPRs.length} PRs in ${batches.length} batches...`);
 
-      // Fetch files changed to calculate cross-functional reach
-      try {
-        const { data: files } = await octokit.rest.pulls.listFiles({
-          owner: REPO_OWNER,
-          repo: REPO_NAME,
-          pull_number: pr.number,
-          per_page: 100,
-        });
+    for (const batch of batches) {
+      await Promise.all(
+        batch.map(async (pr) => {
+          const author = pr.user?.login;
+          if (!author) return;
 
-        engineer.filesChanged += files.length;
-        files.forEach((file) => {
-          const dir = file.filename.split('/')[0];
-          engineer.directories.add(dir);
-        });
-      } catch (error) {
-        console.error(`Error fetching files for PR #${pr.number}:`, error);
-      }
-
-      // Fetch reviews on this PR to track who reviewed it
-      try {
-        const { data: reviews } = await octokit.rest.pulls.listReviews({
-          owner: REPO_OWNER,
-          repo: REPO_NAME,
-          pull_number: pr.number,
-        });
-
-        reviews.forEach((review) => {
-          const reviewer = review.user?.login;
-          if (!reviewer || reviewer === author) return;
-
-          if (!engineerMap.has(reviewer)) {
-            engineerMap.set(reviewer, {
-              username: reviewer,
-              avatar_url: review.user?.avatar_url || '',
+          if (!engineerMap.has(author)) {
+            engineerMap.set(author, {
+              username: author,
+              avatar_url: pr.user?.avatar_url || '',
               prsAuthored: 0,
               prsMerged: 0,
               reviewsGiven: 0,
@@ -108,16 +76,70 @@ export async function GET() {
             });
           }
 
-          const reviewerData = engineerMap.get(reviewer);
-          reviewerData.reviewsGiven++;
-          if (review.body) {
-            reviewerData.reviewComments += review.body.length > 50 ? 1 : 0; // Substantial comments
+          const engineer = engineerMap.get(author);
+          engineer.prsAuthored++;
+          engineer.prsMerged++;
+
+          const [filesResult, reviewsResult] = await Promise.allSettled([
+            octokit.rest.pulls.listFiles({
+              owner: REPO_OWNER,
+              repo: REPO_NAME,
+              pull_number: pr.number,
+              per_page: 100,
+            }),
+            octokit.rest.pulls.listReviews({
+              owner: REPO_OWNER,
+              repo: REPO_NAME,
+              pull_number: pr.number,
+            }),
+          ]);
+
+          if (filesResult.status === 'fulfilled') {
+            const files = filesResult.value.data;
+            engineer.filesChanged += files.length;
+            files.forEach((file) => {
+              const dir = file.filename.split('/')[0];
+              engineer.directories.add(dir);
+            });
+          } else {
+            console.error(`Error fetching files for PR #${pr.number}:`, filesResult.reason);
           }
-        });
-      } catch (error) {
-        console.error(`Error fetching reviews for PR #${pr.number}:`, error);
-      }
+
+          if (reviewsResult.status === 'fulfilled') {
+            const reviews = reviewsResult.value.data;
+            reviews.forEach((review) => {
+              const reviewer = review.user?.login;
+              if (!reviewer || reviewer === author) return;
+
+              if (!engineerMap.has(reviewer)) {
+                engineerMap.set(reviewer, {
+                  username: reviewer,
+                  avatar_url: review.user?.avatar_url || '',
+                  prsAuthored: 0,
+                  prsMerged: 0,
+                  reviewsGiven: 0,
+                  reviewComments: 0,
+                  directories: new Set<string>(),
+                  filesChanged: 0,
+                });
+              }
+
+              const reviewerData = engineerMap.get(reviewer);
+              reviewerData.reviewsGiven++;
+              if (review.body) {
+                reviewerData.reviewComments += review.body.length > 50 ? 1 : 0;
+              }
+            });
+          } else {
+            console.error(`Error fetching reviews for PR #${pr.number}:`, reviewsResult.reason);
+          }
+        })
+      );
+
+      console.log(`Processed batch ${batches.indexOf(batch) + 1}/${batches.length}`);
     }
+
+    console.log(`⏱️ Batch processing: ${formatElapsedMs(batchesT0)}`);
 
     // Calculate impact scores
     const engineers: EngineerImpact[] = Array.from(engineerMap.values()).map((eng) => {
@@ -179,6 +201,8 @@ export async function GET() {
         analysisTimestamp: new Date().toISOString(),
       },
     };
+
+    console.log(`⏱️ Analyze route (total): ${formatElapsedMs(analyzeT0)}`);
 
     return NextResponse.json(response);
   } catch (error) {
