@@ -9,10 +9,26 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [includeBots, setIncludeBots] = useState(false);
+  const [cache, setCache] = useState<{
+    withBots?: DashboardData;
+    withoutBots?: DashboardData;
+  }>({});
 
   useEffect(() => {
+    const cacheKey = includeBots ? 'withBots' : 'withoutBots';
+
+    if (cache[cacheKey]) {
+      console.log(`✅ Using cached data for ${cacheKey}`);
+      setData(cache[cacheKey]!);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    console.log(`📡 Fetching fresh data for ${cacheKey}...`);
     setLoading(true);
     setError(null);
+
     fetch(`/api/analyze?includeBots=${includeBots}`)
       .then((res) => res.json())
       .then((data) => {
@@ -20,6 +36,8 @@ export default function Home() {
           setError(data.error);
         } else {
           setData(data);
+          setCache((prev) => ({ ...prev, [cacheKey]: data }));
+          console.log(`💾 Cached data for ${cacheKey}`);
         }
         setLoading(false);
       })
@@ -70,10 +88,13 @@ export default function Home() {
           <p className="text-gray-300 text-lg">
             Top 5 Most Impactful Engineers (Last 90 Days)
           </p>
-          <div className="flex gap-6 justify-center mt-4 text-sm text-gray-400">
+          <div className="flex flex-wrap gap-6 justify-center items-center mt-4 text-sm text-gray-400">
             <span>📊 {data.metadata.totalPRs} PRs analyzed</span>
             <span>🔍 {data.metadata.totalReviews} reviews tracked</span>
             <span>📅 {new Date(data.metadata.dataFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(data.metadata.dataTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            {cache.withBots && cache.withoutBots && (
+              <span className="text-green-400 text-xs">✓ Both datasets cached</span>
+            )}
           </div>
         </div>
 
@@ -85,7 +106,6 @@ export default function Home() {
               checked={includeBots}
               onChange={(e) => {
                 setIncludeBots(e.target.checked);
-                setLoading(true);
               }}
               className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
             />
