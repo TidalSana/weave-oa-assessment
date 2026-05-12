@@ -62,6 +62,7 @@ export interface EngineerImpact {
 
 export interface DashboardData {
   engineers: EngineerImpact[];
+  honorableMentions?: EngineerImpact[];
   metadata: {
     dataFrom: string;
     dataTo: string;

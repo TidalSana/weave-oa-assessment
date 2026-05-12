@@ -250,10 +250,9 @@ export async function GET(request: Request) {
       }
     }
 
-    // Sort by impact score and take top 5
-    const topEngineers = engineers
-      .sort((a, b) => b.impactScore - a.impactScore)
-      .slice(0, 5);
+    const sortedEngineers = [...engineers].sort((a, b) => b.impactScore - a.impactScore);
+    const topEngineers = sortedEngineers.slice(0, 5);
+    const honorableMentions = sortedEngineers.slice(5, 10);
 
     // Debug: Check for specific engineer
     const pauldambraData = engineers.find((e) => e.username === 'pauldambra');
@@ -284,10 +283,7 @@ export async function GET(request: Request) {
     }
 
     console.log(`\n📊 Top 10 Engineers (by impact score):`);
-    engineers
-      .sort((a, b) => b.impactScore - a.impactScore)
-      .slice(0, 10)
-      .forEach((eng, idx) => {
+    sortedEngineers.slice(0, 10).forEach((eng, idx) => {
         const botFlag = isBot(eng.username) ? ' 🤖 [BOT!]' : '';
         console.log(
           `  ${idx + 1}. ${eng.username}${botFlag} - ${eng.impactScore} pts ` +
@@ -295,10 +291,11 @@ export async function GET(request: Request) {
         );
       });
 
-    console.log(`\n🎯 Returning top 5 to client\n`);
+    console.log(`\n🎯 Returning top 5 + ${honorableMentions.length} honorable mentions to client\n`);
 
     const response: DashboardData = {
       engineers: topEngineers,
+      honorableMentions,
       metadata: {
         dataFrom: since,
         dataTo: new Date().toISOString(),
