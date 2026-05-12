@@ -14,6 +14,7 @@ const DAYS_TO_ANALYZE = 90;
 
 export async function GET() {
   try {
+    // grab the date 90 days ago
     const since = subDays(new Date(), DAYS_TO_ANALYZE).toISOString();
 
     console.log(`Fetching data since ${since}...`);
@@ -40,9 +41,12 @@ export async function GET() {
 
     // Process PRs
     for (const pr of mergedPRs) {
+      // get the author of the PR
       const author = pr.user?.login;
+      // if the author is not found, continue
       if (!author) continue;
 
+      // if the author is not in the engineerMap, add them
       if (!engineerMap.has(author)) {
         engineerMap.set(author, {
           username: author,
@@ -56,6 +60,7 @@ export async function GET() {
         });
       }
 
+      // get the engineer from the engineerMap
       const engineer = engineerMap.get(author);
       engineer.prsAuthored++;
       engineer.prsMerged++;

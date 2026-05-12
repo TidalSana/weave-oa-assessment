@@ -70,7 +70,7 @@ export default function Home() {
           <div className="flex gap-6 justify-center mt-4 text-sm text-gray-400">
             <span>📊 {data.metadata.totalPRs} PRs analyzed</span>
             <span>🔍 {data.metadata.totalReviews} reviews tracked</span>
-            <span>📅 {new Date(data.metadata.dataFrom).toLocaleDateString()} - {new Date(data.metadata.dataTo).toLocaleDateString()}</span>
+            <span>📅 {new Date(data.metadata.dataFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(data.metadata.dataTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
         </div>
 

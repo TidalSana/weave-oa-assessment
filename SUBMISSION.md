@@ -1,12 +1,19 @@
 # PostHog Impact Dashboard - Submission Tracker
 
 ## Timer
-- **Start Time:** [FILL THIS IN BEFORE CODING]
+- **Start Time:** [2026-05-12 14:01:51 MDT]
 - **End Time:** [FILL WHEN DONE]
 - **Total Duration:** [CALCULATE]
 
+## Your Job
+1. Define what "impact" means for software engineers (there's no one right answer!)
+2. Gather relevant data from the PostHog repo. Make sure to include all data from at least the last 90 days.
+3. Analyze the data
+4. Create an interactive dashboard showing who the top 5 most impactful engineers are and why
+5. Host it somewhere we can view it
+
 ## Dashboard URL
-- **Vercel URL:** [FILL AFTER DEPLOY]
+- **Vercel URL:** https://weave-oa-assessment.vercel.app
 - **GitHub Repo:** https://github.com/TidalSana/weave-oa-assessment
 
 ## Approach Description
