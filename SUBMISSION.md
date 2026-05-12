@@ -1,9 +1,9 @@
 # PostHog Impact Dashboard - Submission Tracker
 
 ## Timer
-- **Start Time:** [2026-05-12 14:01:51 MDT]
-- **End Time:** [2026-05-12 15:29:11 MDT]
-- **Total Duration:** [CALCULATE]
+- **Start Time:** 2026-05-12 14:01:51 MDT
+- **End Time:** 2026-05-12 15:29:11 MDT
+- **Total Duration:** 1 hour 27 minutes 20 seconds
 
 ## Your Job
 1. Define what "impact" means for software engineers (there's no one right answer!)
