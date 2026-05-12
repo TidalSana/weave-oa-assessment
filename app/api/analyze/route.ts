@@ -18,7 +18,10 @@ function formatElapsedMs(sinceMark: number): string {
   return `${Math.round(elapsed)}ms (${(elapsed / 1000).toFixed(2)}s)`;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const includeBots = searchParams.get('includeBots') === 'true';
+
   try {
     const analyzeT0 = performance.now();
 
@@ -42,6 +45,23 @@ export async function GET() {
     );
 
     console.log(`Found ${mergedPRs.length} merged PRs in last ${DAYS_TO_ANALYZE} days`);
+
+    const filteredPRs = includeBots
+      ? mergedPRs
+      : mergedPRs.filter(
+          (pr) =>
+            pr.user?.login &&
+            !pr.user.login.toLowerCase().includes('bot') &&
+            !pr.user.login.includes('[bot]') &&
+            pr.user.type !== 'Bot'
+        );
+
+    console.log(
+      includeBots
+        ? `Including all PRs (bots enabled)`
+        : `Filtered to ${filteredPRs.length} PRs (${mergedPRs.length - filteredPRs.length} bots excluded)`
+    );
+
     console.log(`⏱️ PR list fetch: ${formatElapsedMs(analyzeT0)}`);
 
     // Aggregate engineer data
@@ -51,11 +71,11 @@ export async function GET() {
 
     // Process PRs in batches for better performance
     const batches = [];
-    for (let i = 0; i < mergedPRs.length; i += BATCH_SIZE) {
-      batches.push(mergedPRs.slice(i, i + BATCH_SIZE));
+    for (let i = 0; i < filteredPRs.length; i += BATCH_SIZE) {
+      batches.push(filteredPRs.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`Processing ${mergedPRs.length} PRs in ${batches.length} batches...`);
+    console.log(`Processing ${filteredPRs.length} PRs in ${batches.length} batches...`);
 
     for (const batch of batches) {
       await Promise.all(
@@ -193,7 +213,7 @@ export async function GET() {
       metadata: {
         dataFrom: since,
         dataTo: new Date().toISOString(),
-        totalPRs: mergedPRs.length,
+        totalPRs: filteredPRs.length,
         totalReviews: Array.from(engineerMap.values()).reduce(
           (sum, eng) => sum + eng.reviewsGiven,
           0

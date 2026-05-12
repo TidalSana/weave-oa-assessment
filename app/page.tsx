@@ -8,9 +8,12 @@ export default function Home() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [includeBots, setIncludeBots] = useState(false);
 
   useEffect(() => {
-    fetch('/api/analyze')
+    setLoading(true);
+    setError(null);
+    fetch(`/api/analyze?includeBots=${includeBots}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.error) {
@@ -24,7 +27,7 @@ export default function Home() {
         setError(err.message);
         setLoading(false);
       });
-  }, []);
+  }, [includeBots]);
 
   if (loading) {
     return (
@@ -72,6 +75,27 @@ export default function Home() {
             <span>🔍 {data.metadata.totalReviews} reviews tracked</span>
             <span>📅 {new Date(data.metadata.dataFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(data.metadata.dataTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
+        </div>
+
+        {/* Bot Filter Toggle */}
+        <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 mb-6 border border-white/10">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeBots}
+              onChange={(e) => {
+                setIncludeBots(e.target.checked);
+                setLoading(true);
+              }}
+              className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-gray-300">
+              <span className="font-semibold">Include bot accounts</span>
+              <span className="text-sm text-gray-400 ml-2">
+                (dependabot, github-actions, etc.)
+              </span>
+            </span>
+          </label>
         </div>
 
         {/* Impact Score Chart */}
