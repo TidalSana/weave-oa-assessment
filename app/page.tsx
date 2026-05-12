@@ -251,6 +251,46 @@ function EngineerCard({
         <MetricBadge label="Areas Touched" value={engineer.metrics.crossFunctionalReach} />
       </div>
 
+      <div className="mb-4 bg-white/5 rounded-lg p-3 border border-white/10">
+        <h4 className="text-xs font-semibold text-gray-400 uppercase mb-2">Score Breakdown:</h4>
+        <div className="space-y-1 text-xs text-gray-300">
+          <div className="flex justify-between gap-2">
+            <span>PRs Merged ({engineer.metrics.prsMerged} × 10pts)</span>
+            <span className="text-purple-400 font-mono tabular-nums shrink-0">
+              {engineer.metrics.prsMerged * 10}
+            </span>
+          </div>
+          <div className="flex justify-between gap-2">
+            <span>Reviews Given ({engineer.metrics.reviewsGiven} × 15pts)</span>
+            <span className="text-purple-400 font-mono tabular-nums shrink-0">
+              {engineer.metrics.reviewsGiven * 15}
+            </span>
+          </div>
+          <div className="flex justify-between gap-2">
+            <span>Review Depth ({engineer.metrics.reviewDepth.toFixed(2)} × 5pts)</span>
+            <span className="text-purple-400 font-mono tabular-nums shrink-0">
+              {Math.round(engineer.metrics.reviewDepth * 5)}
+            </span>
+          </div>
+          <div className="flex justify-between gap-2">
+            <span>Cross-functional Reach ({engineer.metrics.crossFunctionalReach} × 3pts)</span>
+            <span className="text-purple-400 font-mono tabular-nums shrink-0">
+              {engineer.metrics.crossFunctionalReach * 3}
+            </span>
+          </div>
+          <div className="flex justify-between gap-2">
+            <span>Code Impact ({Math.min(engineer.metrics.codeImpact, 20)} × 2pts)</span>
+            <span className="text-purple-400 font-mono tabular-nums shrink-0">
+              {Math.min(engineer.metrics.codeImpact, 20) * 2}
+            </span>
+          </div>
+          <div className="flex justify-between pt-2 mt-2 border-t border-white/20 font-semibold gap-2">
+            <span>Total Impact Score</span>
+            <span className="text-purple-300 font-mono tabular-nums shrink-0">{engineer.impactScore}</span>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-2">
         <h4 className="text-sm font-semibold text-gray-400 uppercase">Why They're Impactful:</h4>
         <ul className="space-y-1">
