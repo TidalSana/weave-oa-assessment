@@ -269,7 +269,7 @@ function EngineerCard({
   const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
 
   return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20 hover:border-purple-500 transition-all">
+    <div className="overflow-visible bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20 hover:border-purple-500 transition-all">
       <div className="flex items-start gap-4 mb-4">
         <div className="relative">
           <img
@@ -288,10 +288,26 @@ function EngineerCard({
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <MetricBadge label="PRs Merged" value={engineer.metrics.prsMerged} />
-        <MetricBadge label="Reviews Given" value={engineer.metrics.reviewsGiven} />
-        <MetricBadge label="Review Depth" value={engineer.metrics.reviewDepth.toFixed(2)} />
-        <MetricBadge label="Areas Touched" value={engineer.metrics.crossFunctionalReach} />
+        <MetricBadge
+          label="PRs Merged"
+          value={engineer.metrics.prsMerged}
+          tooltip="Pull requests successfully merged and shipped to production"
+        />
+        <MetricBadge
+          label="Reviews Given"
+          value={engineer.metrics.reviewsGiven}
+          tooltip="Number of PRs reviewed for teammates (excludes bot PRs when filtered)"
+        />
+        <MetricBadge
+          label="Review Quality"
+          value={`${Math.round(engineer.metrics.reviewDepth * 100)}%`}
+          tooltip="Percentage of reviews with substantial feedback (>50 chars). Higher = more thorough vs rubber-stamping."
+        />
+        <MetricBadge
+          label="Areas Touched"
+          value={engineer.metrics.crossFunctionalReach}
+          tooltip="Unique top-level directories modified. Higher = broader codebase knowledge."
+        />
       </div>
 
       <div className="mb-4 bg-white/5 rounded-lg p-3 border border-white/10">
@@ -368,11 +384,32 @@ function EngineerCard({
   );
 }
 
-function MetricBadge({ label, value }: { label: string; value: string | number }) {
+function MetricBadge({
+  label,
+  value,
+  tooltip,
+}: {
+  label: string;
+  value: string | number;
+  tooltip?: string;
+}) {
   return (
-    <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-      <div className="text-gray-400 text-xs uppercase">{label}</div>
+    <div className="bg-white/5 rounded-lg p-3 border border-white/10 relative group">
+      <div className="text-gray-400 text-xs uppercase flex items-center gap-1">
+        {label}
+        {tooltip ? <span className="text-gray-500 cursor-help select-none">ℹ️</span> : null}
+      </div>
       <div className="text-white text-xl font-bold">{value}</div>
+
+      {tooltip ? (
+        <div
+          role="tooltip"
+          className="absolute bottom-full left-1/2 z-20 mb-2 w-48 -translate-x-1/2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-center text-xs text-white opacity-0 shadow-lg transition-all duration-200 invisible group-hover:opacity-100 group-hover:visible"
+        >
+          {tooltip}
+          <div className="absolute left-1/2 top-full -mt-1 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+        </div>
+      ) : null}
     </div>
   );
 }
