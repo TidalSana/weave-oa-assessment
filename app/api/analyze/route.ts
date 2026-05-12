@@ -201,13 +201,13 @@ export async function GET(request: Request) {
       const qualityScore = eng.prsMerged * 10; // Assume merged PRs = good quality
       const avgFilesPerPR = eng.prsMerged > 0 ? eng.filesChanged / eng.prsMerged : 0;
 
-      // Composite impact score (weighted)
+      // Enhanced Collaboration Model — leverage and quality over raw output
       const impactScore =
-        eng.prsMerged * 10 + // Base contribution
-        eng.reviewsGiven * 15 + // High value on helping others
-        reviewDepth * 5 + // Quality of reviews
-        crossFunctionalReach * 3 + // Breadth of knowledge
-        Math.min(avgFilesPerPR, 20) * 2; // Scope of changes (capped to prevent gaming)
+        eng.reviewsGiven * 20 +
+        reviewDepth * 10 +
+        eng.prsMerged * 12 +
+        crossFunctionalReach * 5 +
+        Math.min(avgFilesPerPR, 20) * 3;
 
       const reasoning: string[] = [];
       if (eng.prsMerged > 10) reasoning.push(`Shipped ${eng.prsMerged} PRs`);

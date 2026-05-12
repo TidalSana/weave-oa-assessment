@@ -6,20 +6,63 @@ An interactive dashboard analyzing the most impactful engineers in the PostHog r
 
 This dashboard goes beyond simple metrics like lines of code or commit count. Impact is measured through:
 
-### Core Metrics:
-- **PRs Merged (10pts each):** Successful contributions shipped to production
-- **Reviews Given (15pts each):** Unblocking teammates and knowledge sharing
-- **Review Depth (5pts):** Quality of feedback (thoughtful comments vs. rubber-stamping)
-- **Cross-functional Reach (3pts):** Working across different areas of the codebase
-- **Code Impact (log scale):** Scope of changes (log scale prevents LOC gaming)
+### Core Metrics (Enhanced Collaboration Model):
 
-### Why These Metrics?
+**Priority Ranking: Most → Least Impact**
 
-1. **Reviews Weighted Highly:** Reviewing code is unblocking work and multiplying team velocity
-2. **Review Depth Matters:** Distinguishes thoughtful reviewers from quick approvers
-3. **Cross-functional Reach:** Engineers working across multiple areas spread knowledge
-4. **Log Scale for Code:** Prevents gaming with massive LOC changes
-5. **Collaboration Over Output:** Values helping others as much as individual contributions
+1. **Reviews Given (20pts each)** 🥇
+   - **Why Highest:** One review unblocks another engineer (multiplier effect)
+   - **Impact:** Reviewing 20 PRs = potentially unblocking 20 features
+   - **Philosophy:** Team velocity > individual output
+
+2. **Review Depth (10pts)** 🥈
+   - **Why Second:** Quality > quantity (prevents rubber-stamping)
+   - **Calculation:** Substantial comments (>50 chars) / total reviews
+   - **Impact:** Thoughtful reviews teach and catch subtle bugs
+
+3. **PRs Merged (12pts each)** 🥉
+   - **Why Third:** Shipping is essential but not a team multiplier
+   - **Philosophy:** Great engineers ship AND help others ship
+   - **Balance:** Valued highly (12pts) but not above collaboration
+
+4. **Cross-functional Reach (5pts per area)**
+   - **Why Matters:** Generalists unblock themselves, reduce team bottlenecks
+   - **Calculation:** Number of unique top-level directories touched
+   - **Impact:** Bus factor protection, knowledge spread
+
+5. **Code Impact (3pts per file, capped at 20)**
+   - **Why Lowest:** Scope matters but easy to game
+   - **Anti-Gaming:** Capped to prevent LOC inflation
+   - **Philosophy:** Small, focused PRs often > massive changes
+
+### Scoring Philosophy
+
+> **Impact = Leverage × Quality**
+>
+> We prioritize actions that multiply team output over individual contributions.
+> A single thoughtful review can prevent bugs, teach patterns, and unblock
+> critical features — far exceeding the impact of solo work.
+
+**Weight Rationale:**
+- **Reviews (20pts):** Highest leverage — unblocks entire team
+- **Review Depth (10pts):** Prevents gaming with low-effort approvals
+- **PRs (12pts):** Essential but linear impact (helps your work only)
+- **Cross-functional (5pts):** Generalists enable flexibility
+- **Code Impact (3pts):** Scope matters, but capped to prevent abuse
+
+**Example Calculation:**
+
+```
+Engineer with 5 PRs, 9 reviews (0.78 depth), 4 areas, 2 avg files/PR:
+- Reviews:         9 × 20 = 180 pts (66% of score)
+- Review Depth:  0.78 × 10 = 8 pts (3%)
+- PRs:             5 × 12 = 60 pts (22%)
+- Cross-functional: 4 × 5 = 20 pts (7%)
+- Code Impact:     2 × 3 = 6 pts (2%)
+Total: 274 points
+```
+
+This engineer is **review-focused** (66% from reviews) — a team multiplier!
 
 ## 🚀 Quick Start
 

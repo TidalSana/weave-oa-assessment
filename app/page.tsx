@@ -200,14 +200,57 @@ export default function Home() {
             Impact is calculated using a composite score that values collaboration and code quality over raw output:
           </p>
           <ul className="text-gray-300 space-y-2 text-sm">
-            <li>✅ <strong>PRs Merged (10pts each):</strong> Successful contributions shipped to production</li>
-            <li>🤝 <strong>Reviews Given (15pts each):</strong> Unblocking teammates and sharing knowledge</li>
-            <li>💬 <strong>Review Depth (5pts):</strong> Thoughtful, detailed feedback vs. rubber-stamping</li>
-            <li>🌐 <strong>Cross-functional Reach (3pts):</strong> Working across different areas of the codebase</li>
-            <li>📝 <strong>Code Impact (log scale):</strong> Scope of changes (prevents LOC gaming)</li>
+            <li>
+              🥇 <strong>Reviews Given (20pts each):</strong> Highest impact — unblocks team, multiplies velocity
+            </li>
+            <li>
+              🥈 <strong>Review Depth (10pts):</strong> Quality over quantity — thoughtful feedback vs. rubber-stamping
+            </li>
+            <li>
+              🥉 <strong>PRs Merged (12pts each):</strong> Shipping code is essential but not a team multiplier
+            </li>
+            <li>
+              🌐 <strong>Cross-functional Reach (5pts):</strong> Generalists reduce bottlenecks, spread knowledge
+            </li>
+            <li>
+              📝 <strong>Code Impact (3pts, capped):</strong> Scope matters, but capped to prevent LOC gaming
+            </li>
           </ul>
+          <p className="text-gray-400 text-xs mt-3 italic">
+            Philosophy: Impact = Leverage × Quality. We prioritize actions that multiply team output.
+          </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ScoreRow({
+  label,
+  count,
+  multiplier,
+  total,
+  decimals = 0,
+}: {
+  label: string;
+  count: number;
+  multiplier: number;
+  total: number;
+  decimals?: number;
+}) {
+  const points = Math.round(count * multiplier);
+  const percentage = total > 0 ? Math.round((points / total) * 100) : 0;
+  const displayCount = decimals > 0 ? count.toFixed(decimals) : String(count);
+
+  return (
+    <div className="flex justify-between gap-2 text-gray-300">
+      <span className="min-w-0">
+        {label} ({displayCount} × {multiplier}pts)
+      </span>
+      <span className="flex items-center gap-2 shrink-0 tabular-nums">
+        <span className="text-purple-400 font-mono">{points}</span>
+        <span className="text-gray-500 text-xs">({percentage}%)</span>
+      </span>
     </div>
   );
 }
@@ -253,38 +296,39 @@ function EngineerCard({
 
       <div className="mb-4 bg-white/5 rounded-lg p-3 border border-white/10">
         <h4 className="text-xs font-semibold text-gray-400 uppercase mb-2">Score Breakdown:</h4>
-        <div className="space-y-1 text-xs text-gray-300">
-          <div className="flex justify-between gap-2">
-            <span>PRs Merged ({engineer.metrics.prsMerged} × 10pts)</span>
-            <span className="text-purple-400 font-mono tabular-nums shrink-0">
-              {engineer.metrics.prsMerged * 10}
-            </span>
-          </div>
-          <div className="flex justify-between gap-2">
-            <span>Reviews Given ({engineer.metrics.reviewsGiven} × 15pts)</span>
-            <span className="text-purple-400 font-mono tabular-nums shrink-0">
-              {engineer.metrics.reviewsGiven * 15}
-            </span>
-          </div>
-          <div className="flex justify-between gap-2">
-            <span>Review Depth ({engineer.metrics.reviewDepth.toFixed(2)} × 5pts)</span>
-            <span className="text-purple-400 font-mono tabular-nums shrink-0">
-              {Math.round(engineer.metrics.reviewDepth * 5)}
-            </span>
-          </div>
-          <div className="flex justify-between gap-2">
-            <span>Cross-functional Reach ({engineer.metrics.crossFunctionalReach} × 3pts)</span>
-            <span className="text-purple-400 font-mono tabular-nums shrink-0">
-              {engineer.metrics.crossFunctionalReach * 3}
-            </span>
-          </div>
-          <div className="flex justify-between gap-2">
-            <span>Code Impact ({Math.min(engineer.metrics.codeImpact, 20)} × 2pts)</span>
-            <span className="text-purple-400 font-mono tabular-nums shrink-0">
-              {Math.min(engineer.metrics.codeImpact, 20) * 2}
-            </span>
-          </div>
-          <div className="flex justify-between pt-2 mt-2 border-t border-white/20 font-semibold gap-2">
+        <div className="space-y-1 text-xs">
+          <ScoreRow
+            label="Reviews Given"
+            count={engineer.metrics.reviewsGiven}
+            multiplier={20}
+            total={engineer.impactScore}
+          />
+          <ScoreRow
+            label="Review Depth"
+            count={engineer.metrics.reviewDepth}
+            multiplier={10}
+            total={engineer.impactScore}
+            decimals={2}
+          />
+          <ScoreRow
+            label="PRs Merged"
+            count={engineer.metrics.prsMerged}
+            multiplier={12}
+            total={engineer.impactScore}
+          />
+          <ScoreRow
+            label="Cross-functional Reach"
+            count={engineer.metrics.crossFunctionalReach}
+            multiplier={5}
+            total={engineer.impactScore}
+          />
+          <ScoreRow
+            label="Code Impact"
+            count={Math.min(engineer.metrics.codeImpact, 20)}
+            multiplier={3}
+            total={engineer.impactScore}
+          />
+          <div className="flex justify-between pt-2 mt-2 border-t border-white/20 font-semibold text-gray-200 gap-2">
             <span>Total Impact Score</span>
             <span className="text-purple-300 font-mono tabular-nums shrink-0">{engineer.impactScore}</span>
           </div>
